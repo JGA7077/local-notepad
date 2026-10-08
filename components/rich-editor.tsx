@@ -90,33 +90,38 @@ function Toolbar({
     }),
   });
 
+  const chain = () => {
+    editor.view.focus();
+    return editor.chain();
+  };
+
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-zinc-700 bg-zinc-900 px-2 py-1">
       <ToolbarButton
         title="Parágrafo"
         active={state.paragraph}
-        onClick={() => editor.chain().focus().setParagraph().run()}
+        onClick={() => chain().setParagraph().run()}
       >
         P
       </ToolbarButton>
       <ToolbarButton
         title="Título 1 (H1)"
         active={state.h1}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+        onClick={() => chain().toggleHeading({ level: 1 }).run()}
       >
         H1
       </ToolbarButton>
       <ToolbarButton
         title="Título 2 (H2)"
         active={state.h2}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+        onClick={() => chain().toggleHeading({ level: 2 }).run()}
       >
         H2
       </ToolbarButton>
       <ToolbarButton
         title="Título 3 (H3)"
         active={state.h3}
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+        onClick={() => chain().toggleHeading({ level: 3 }).run()}
       >
         H3
       </ToolbarButton>
@@ -127,7 +132,7 @@ function Toolbar({
         title="Negrito (Ctrl+B)"
         active={state.bold}
         className="font-bold"
-        onClick={() => editor.chain().focus().toggleBold().run()}
+        onClick={() => chain().toggleBold().run()}
       >
         B
       </ToolbarButton>
@@ -135,7 +140,7 @@ function Toolbar({
         title="Itálico (Ctrl+I)"
         active={state.italic}
         className="font-serif italic"
-        onClick={() => editor.chain().focus().toggleItalic().run()}
+        onClick={() => chain().toggleItalic().run()}
       >
         I
       </ToolbarButton>
@@ -145,7 +150,7 @@ function Toolbar({
       <ToolbarButton
         title="Lista com marcadores"
         active={state.bulletList}
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        onClick={() => chain().toggleBulletList().run()}
       >
         <svg
           viewBox="0 0 16 16"
@@ -163,7 +168,7 @@ function Toolbar({
       <ToolbarButton
         title="Lista numerada"
         active={state.orderedList}
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        onClick={() => chain().toggleOrderedList().run()}
       >
         <span className="text-[11px] leading-none font-semibold">1.</span>
       </ToolbarButton>

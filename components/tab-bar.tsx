@@ -10,6 +10,7 @@ type Props = {
   onClose: (id: string) => void;
   onRename: (id: string, title: string) => void;
   onCreate: () => void;
+  onDownload: (tab: Tab) => void;
 };
 
 export default function TabBar({
@@ -19,6 +20,7 @@ export default function TabBar({
   onClose,
   onRename,
   onCreate,
+  onDownload,
 }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -92,12 +94,26 @@ export default function TabBar({
                 <span className="truncate">{tab.title}</span>
                 <button
                   type="button"
+                  aria-label={`Salvar ${tab.title} como txt`}
+                  title="Salvar como .txt"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDownload(tab);
+                  }}
+                  className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-sm text-zinc-400 opacity-0 hover:bg-zinc-700 hover:text-zinc-100 group-hover:opacity-100 focus:opacity-100"
+                >
+                  <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M8 2.5v7.5M5 7.5L8 10.5l3-3M3 13.5h10" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
                   aria-label={`Fechar ${tab.title}`}
                   onClick={(e) => {
                     e.stopPropagation();
                     onClose(tab.id);
                   }}
-                  className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-sm text-zinc-400 opacity-0 hover:bg-zinc-700 hover:text-zinc-100 group-hover:opacity-100"
+                  className="flex size-5 shrink-0 items-center justify-center rounded-sm text-zinc-400 opacity-0 hover:bg-zinc-700 hover:text-zinc-100 group-hover:opacity-100 focus:opacity-100"
                 >
                   <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="M4 4l8 8M12 4l-8 8" />

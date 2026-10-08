@@ -5,6 +5,7 @@ import TabBar from "@/components/tab-bar";
 import RichEditor, { type RichEditorHandle } from "@/components/rich-editor";
 import OcrModal from "@/components/ocr-modal";
 import { escapeHtml } from "@/lib/storage";
+import { downloadTabAsTxt } from "@/lib/export";
 import {
   addTab,
   closeTab,
@@ -141,6 +142,7 @@ ${tab.content}
         onClose={closeTab}
         onRename={renameTab}
         onCreate={addTab}
+        onDownload={downloadTabAsTxt}
       />
       <RichEditor
         key={activeTab.id}
