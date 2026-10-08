@@ -32,11 +32,19 @@ function emit() {
   listeners.forEach((listener) => listener());
 }
 
+function persistNow() {
+  if (!snapshot) return;
+  if (!saveStore(snapshot) && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("notepad:save-error"));
+  }
+}
+
 function commit(next: Store) {
   snapshot = next;
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    if (snapshot) saveStore(snapshot);
+    saveTimer = null;
+    persistNow();
   }, 400);
   emit();
 }
@@ -52,7 +60,7 @@ export function flushSave() {
     clearTimeout(saveTimer);
     saveTimer = null;
   }
-  if (snapshot) saveStore(snapshot);
+  persistNow();
 }
 
 export function updateStore(updater: (store: Store) => Store) {
@@ -105,28 +113,5 @@ export function updateContent(content: string) {
     tabs: prev.tabs.map((tab) =>
       tab.id === prev.activeTabId ? { ...tab, content, updatedAt: Date.now() } : tab,
     ),
-  }));
-}
-
-export function insertContentAt(
-  id: string,
-  start: number,
-  end: number,
-  text: string,
-) {
-  updateStore((prev) => ({
-    ...prev,
-    tabs: prev.tabs.map((tab) => {
-      if (tab.id !== id) return tab;
-      const before = tab.content.slice(0, start);
-      const after = tab.content.slice(end);
-      const prefix = before.length > 0 && !before.endsWith("\n") ? "\n" : "";
-      const suffix = after.length > 0 && !after.startsWith("\n") ? "\n" : "";
-      return {
-        ...tab,
-        content: `${before}${prefix}${text}${suffix}${after}`,
-        updatedAt: Date.now(),
-      };
-    }),
   }));
 }

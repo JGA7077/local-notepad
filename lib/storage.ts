@@ -42,6 +42,22 @@ function isValidTab(value: unknown): value is Tab {
   );
 }
 
+export function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function migrateContent(content: string): string {
+  if (!content || /^\s*<[a-z!/][^>]*>/i.test(content)) return content;
+  const blocks = content
+    .split(/\n{2,}/)
+    .map((block) => `<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>`);
+  return blocks.join("");
+}
+
 export function loadStore(): Store | null {
   if (typeof window === "undefined") return null;
 
@@ -59,7 +75,10 @@ export function loadStore(): Store | null {
       return null;
     }
 
-    const tabs = parsed.tabs;
+    const tabs = parsed.tabs.map((tab) => ({
+      ...tab,
+      content: migrateContent(tab.content),
+    }));
     const activeTabId = tabs.some((tab) => tab.id === parsed.activeTabId)
       ? (parsed.activeTabId as string)
       : tabs[0].id;
