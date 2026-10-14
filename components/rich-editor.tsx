@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import {
   EditorContent,
   useEditor,
@@ -10,7 +10,14 @@ import {
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import { Placeholder } from "@tiptap/extension-placeholder";
+import { Color, TextStyle } from "@tiptap/extension-text-style";
 import { fileToDataUrl, imageFiles } from "@/lib/image";
+import {
+  MAX_RECENT_COLORS,
+  loadRecentColors,
+  saveRecentColors,
+  toHexColor,
+} from "@/lib/recent-colors";
 
 export type RichEditorHandle = {
   insertText: (text: string) => void;
@@ -25,6 +32,8 @@ type Props = {
 
 const extensions = [
   StarterKit,
+  TextStyle,
+  Color,
   Image.configure({ allowBase64: true }),
   Placeholder.configure({
     placeholder:
@@ -69,10 +78,16 @@ function ToolbarButton({
 
 function Toolbar({
   editor,
+  recentColors,
+  onPickColor,
+  onApplyColor,
   onPickImage,
   onPickOcr,
 }: {
   editor: Editor;
+  recentColors: string[];
+  onPickColor: (color: string) => void;
+  onApplyColor: (color: string) => void;
   onPickImage: () => void;
   onPickOcr: () => void;
 }) {
@@ -87,6 +102,7 @@ function Toolbar({
       italic: e.isActive("italic"),
       bulletList: e.isActive("bulletList"),
       orderedList: e.isActive("orderedList"),
+      color: toHexColor(e.getAttributes("textStyle").color as string | undefined),
     }),
   });
 
@@ -125,6 +141,44 @@ function Toolbar({
       >
         H3
       </ToolbarButton>
+
+      <span className="mx-1 h-5 w-px bg-zinc-700" aria-hidden="true" />
+
+      <label
+        title="Cor do texto"
+        className="relative flex size-7 shrink-0 cursor-pointer items-center justify-center rounded hover:bg-zinc-800"
+      >
+        <span
+          aria-hidden="true"
+          className="pointer-events-none size-5 rounded-sm border border-zinc-500"
+          style={{ backgroundColor: state.color ?? "#e4e4e7" }}
+        />
+        <input
+          type="color"
+          aria-label="Cor do texto"
+          value={state.color ?? "#e4e4e7"}
+          onChange={(e) => onPickColor(e.target.value)}
+          className="absolute inset-0 size-full cursor-pointer opacity-0"
+        />
+      </label>
+
+      {recentColors.map((color) => {
+        const active = state.color === color;
+        return (
+          <button
+            key={color}
+            type="button"
+            title={`Aplicar cor ${color}${active ? " (clique para remover)" : ""}`}
+            aria-label={`Aplicar cor ${color}`}
+            aria-pressed={active}
+            onClick={() => onApplyColor(color)}
+            style={{ backgroundColor: color }}
+            className={`h-5 w-5 shrink-0 rounded-sm border ${
+              active ? "border-zinc-100 ring-1 ring-zinc-100" : "border-zinc-600"
+            }`}
+          />
+        );
+      })}
 
       <span className="mx-1 h-5 w-px bg-zinc-700" aria-hidden="true" />
 
@@ -210,6 +264,15 @@ const RichEditor = forwardRef<RichEditorHandle, Props>(function RichEditor(
 ) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const ocrInputRef = useRef<HTMLInputElement>(null);
+  const [recentColors, setRecentColors] = useState<string[]>(loadRecentColors);
+  const colorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (colorTimer.current) clearTimeout(colorTimer.current);
+    },
+    [],
+  );
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -229,6 +292,38 @@ const RichEditor = forwardRef<RichEditorHandle, Props>(function RichEditor(
     },
     onUpdate: ({ editor: current }) => onChange(current.getHTML()),
   });
+
+  const recordColor = (color: string) => {
+    const next = [color, ...recentColors.filter((c) => c !== color)].slice(
+      0,
+      MAX_RECENT_COLORS,
+    );
+    setRecentColors(next);
+    saveRecentColors(next);
+  };
+
+  const applyColor = (color: string) => {
+    if (!editor || editor.isDestroyed) return;
+    const normalized = color.toLowerCase();
+    const current = toHexColor(
+      editor.getAttributes("textStyle").color as string | undefined,
+    );
+    editor.view.focus();
+    if (current === normalized) {
+      editor.chain().unsetColor().run();
+    } else {
+      editor.chain().setColor(normalized).run();
+    }
+    recordColor(normalized);
+  };
+
+  const pickColor = (color: string) => {
+    if (!editor || editor.isDestroyed) return;
+    const normalized = color.toLowerCase();
+    editor.chain().setColor(normalized).run();
+    if (colorTimer.current) clearTimeout(colorTimer.current);
+    colorTimer.current = setTimeout(() => recordColor(normalized), 700);
+  };
 
   const insertFiles = async (
     files: File[],
@@ -284,6 +379,9 @@ const RichEditor = forwardRef<RichEditorHandle, Props>(function RichEditor(
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <Toolbar
         editor={editor}
+        recentColors={recentColors}
+        onPickColor={pickColor}
+        onApplyColor={applyColor}
         onPickImage={() => imageInputRef.current?.click()}
         onPickOcr={() => ocrInputRef.current?.click()}
       />
